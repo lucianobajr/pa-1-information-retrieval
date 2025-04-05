@@ -1,7 +1,6 @@
 from urllib.parse import urlparse
 from typing import Set
 
-
 def verify_is_valid_url(url: str) -> bool:
     """Verifica se a URL é válida e tem esquema e domínio."""
     try:

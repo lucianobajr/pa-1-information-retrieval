@@ -2,7 +2,7 @@
 VENV_DIR=venv
 
 # Caminho para o arquivo de seeds
-SEEDS=seeds.txt
+SEEDS=./seeds/seeds-2024698420.txt
 
 # Número de páginas a coletar
 LIMIT=1000

@@ -1,7 +1,7 @@
 from src.config.settings import Settings
 from src.utils.parse_args import parse_args
 from src.infra.frontier import get_seeds_from_file
-
+from src.core.crawler_service import CrawlerService
 
 def main():
     args = parse_args()
@@ -12,8 +12,9 @@ def main():
         debug=args.debug
     )
 
-    seeds = get_seeds_from_file(seed_file=settings.seed_file)
-    print(seeds)
+    crawler = CrawlerService(settings=settings)
+    
+    crawler.run()
 
 
 if __name__ == "__main__":
