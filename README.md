@@ -5,4 +5,4 @@
     python3 main.py -s <SEEDS> -n <LIMIT> [-d]
     python3 main.py -s seeds.txt -n 1000 -d
 
-<img src="./crawler-1-img.png">
+<img src="./docs/imgs/crawler-1-img.png">
