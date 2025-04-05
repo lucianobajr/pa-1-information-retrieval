@@ -1,11 +1,13 @@
 import time
 import json
 import queue
-import requests
 import threading
 
-from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+
+import requests
+
+from bs4 import BeautifulSoup
 
 from src.config.settings import Settings
 
