@@ -1,6 +1,6 @@
-from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from typing import List
+from bs4 import BeautifulSoup
 
 def extract_outlinks(html: str, base_url: str) -> List[str]:
     soup = BeautifulSoup(html, 'html.parser')

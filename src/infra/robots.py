@@ -11,7 +11,8 @@ class RobotsCache:
             parser.set_url(f"http://{domain}/robots.txt")
             try:
                 parser.read()
-            except:
+            except Exception as e:
+                print(f"Erro ao ler robots.txt de {domain}: {e}")
                 parser = None
             self.cache[domain] = parser
         return self.cache[domain]

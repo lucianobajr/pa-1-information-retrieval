@@ -1,6 +1,6 @@
 import time
-import requests
 from urllib.parse import urlparse
+import requests
 from src.core.types import Page
 from src.infra.robots import RobotsCache
 

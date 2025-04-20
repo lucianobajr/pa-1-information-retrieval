@@ -8,7 +8,7 @@ class PrioritizedURL:
 
 
 class Page:
-    def __init__(self, url: str, html: str, status_code: int, timestamp: float, final_url: str = None):
+    def __init__(self, url: str, html: str, status_code: int, timestamp: float, final_url: str = None): # pylint: disable=too-many-arguments
         self.url = url
         self.html = html
         self.status_code = status_code

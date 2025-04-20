@@ -1,7 +1,7 @@
 import threading
 
-from bs4 import BeautifulSoup
 import json
+from bs4 import BeautifulSoup
 
 from src.config.settings import Settings
 from src.core.frontier import Frontier

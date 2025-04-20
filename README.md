@@ -5,7 +5,6 @@
     python3 main.py -s <SEEDS> -n <LIMIT> [-d]
     python3 main.py -s seeds.txt -n 1000 -d
 
-
     pylint --rcfile=.pylintrc $(git ls-files '*.py')
 
 <img src="./docs/imgs/crawler-1-img.png">

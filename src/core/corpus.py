@@ -1,6 +1,7 @@
 import os
 import hashlib
 
+
 class Corpus:
     def __init__(self, directory="corpus"):
         self.directory = directory
@@ -13,6 +14,6 @@ class Corpus:
             return False
         self.hashes.add(url_hash)
         path = os.path.join(self.directory, f"{url_hash}.html")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(html)
+        with open(path, "w", encoding="utf-8") as file_handle:
+            file_handle.write(html)
         return True
