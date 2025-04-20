@@ -1,10 +1,11 @@
-from urllib.parse import urlparse
+
 from typing import Set
+from urllib.parse import urlparse
+from src.core.normalizer import normalize_url
 
 def verify_is_valid_url(url: str) -> bool:
-    """Verifica se a URL é válida e tem esquema e domínio."""
     try:
-        parsed = urlparse(url=url)
+        parsed = urlparse(url.strip())
         return all([parsed.scheme in {"http", "https"}, parsed.netloc])
     except Exception:
         return False
@@ -18,21 +19,19 @@ def get_seeds_from_file(seed_file: str) -> Set[str]:
             for seed in file:
                 seed = seed.strip()
                 if not seed or seed.startswith("#"):
-                    continue  # só recuperar urls
+                    continue
 
-                if verify_is_valid_url(url=seed):
-                    seeds.add(seed)
-
+                if verify_is_valid_url(seed):
+                    normalized = normalize_url(seed)
+                    seeds.add(normalized)
                 else:
-                    print("URL inválida ignorada!")
+                    print(f"[WARN] URL inválida ignorada: {seed}")
     except FileNotFoundError:
-        raise FileNotFoundError(
-            f"Arquivo de seeds não encontrado: {seed_file}")
+        raise FileNotFoundError(f"Arquivo de seeds não encontrado: {seed_file}")
     except Exception as e:
         raise RuntimeError(f"Erro ao ler o arquivo de seeds: {e}")
 
     if not seeds:
-        raise ValueError(
-            "Nenhuma URL válida foi encontrada no arquivo de seeds.")
+        raise ValueError("Nenhuma URL válida foi encontrada no arquivo de seeds.")
 
     return seeds
