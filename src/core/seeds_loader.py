@@ -4,6 +4,9 @@ from urllib.parse import urlparse
 from src.core.normalizer import normalize_url
 
 def verify_is_valid_url(url: str) -> bool:
+    '''
+    Verifica se uma string é uma URL válida com esquema HTTP ou HTTPS.
+    '''
     try:
         parsed = urlparse(url.strip())
         return all([parsed.scheme in {"http", "https"}, parsed.netloc])
@@ -12,6 +15,12 @@ def verify_is_valid_url(url: str) -> bool:
 
 
 def get_seeds_from_file(seed_file: str) -> Set[str]:
+    '''
+    Lê o arquivo de seeds contendo URLs, uma por linha, e retorna um conjunto de URLs válidas e normalizadas.
+
+    Ignora linhas vazias ou comentários (linhas que começam com "#").
+    URLs inválidas são descartadas.
+    '''
     seeds = set()
 
     try:

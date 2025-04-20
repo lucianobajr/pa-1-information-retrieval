@@ -11,9 +11,19 @@ from src.core.extractor import extract_outlinks
 from src.infra.logger import get_logger
 from src.core.seeds_loader import get_seeds_from_file
 
+from src.utils.get_safe_thread_count import get_safe_thread_count
+
 
 class Controller:
+    '''
+    Classe principal responsável por orquestrar o processo de coleta do crawler.
+    A coleta é encerrada ao atingir o número máximo de páginas definido (`page_limit`).
+    '''
+
     def __init__(self, settings: Settings):
+        '''
+        Inicializa os componentes principais do crawler.
+        '''
         self.settings = settings
         self.logger = get_logger(__name__, debug=settings.debug)
         self.frontier = Frontier()
@@ -28,8 +38,17 @@ class Controller:
             self.frontier.add(seed)
 
     def run(self):
+        '''
+        Inicia o processo de coleta criando múltiplas threads.
+
+        Cada thread executa a função `worker`, responsável por extrair,
+        processar e armazenar páginas da web. Aguarda até que todas as threads finalizem.
+        '''
+
+        thread_count = get_safe_thread_count(default=5)
+
         threads = []
-        for _ in range(5):  # Número de threads paralelas
+        for _ in range(thread_count):  # Número de threads paralelas
             thread = threading.Thread(target=self.worker)
             thread.start()
             threads.append(thread)
@@ -38,6 +57,19 @@ class Controller:
             thread.join()
 
     def worker(self):
+        '''
+        Função executada por cada thread.
+
+        Executa o ciclo principal de coleta:
+            - Verifica se o limite de páginas foi atingido.
+            - Recupera a próxima URL da frontier.
+            - Faz o download da página.
+            - Valida e salva a página no corpus.
+            - Se estiver no modo debug, exibe resumo com título e primeiros termos.
+            - Extrai os outlinks da página e os adiciona à frontier.
+
+        O acesso a variáveis compartilhadas (`page_count`, `frontier`) é controlado por mutex (lock).
+        '''
         while not self.frontier.is_empty():
             with self.lock:
                 if self.page_count >= self.max_pages:

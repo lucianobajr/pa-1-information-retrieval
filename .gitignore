@@ -174,3 +174,5 @@ cython_debug/
 .pypirc
 
 pa1/*
+
+corpus/*

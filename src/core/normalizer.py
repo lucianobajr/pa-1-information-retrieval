@@ -1,6 +1,18 @@
 from urllib.parse import urlparse, urlunparse
 
+
 def normalize_url(url: str) -> str:
+    '''
+    Normaliza uma URL para garantir consistência na comparação e armazenamento.
+
+    A normalização inclui:
+    - Conversão do esquema (http/https) e domínio para minúsculas.
+    - Inclusão da porta apenas se ela for não padrão (≠ 80 para http, ≠ 443 para https).
+    - Garantia de que o caminho não termine com uma barra (a menos que seja apenas "/").
+    - Remoção de parâmetros, query string e fragmentos.
+    
+    Retorna a URL em formato canônico
+    '''
     parsed = urlparse(url)
 
     scheme = parsed.scheme.lower()
