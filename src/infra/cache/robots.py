@@ -53,4 +53,6 @@ class RobotsCache:
         if parser:
             delay = parser.crawl_delay(user_agent)
             return delay if delay is not None else 0.1
+        
+        # atraso de pelo menos 100 ms
         return 0.1

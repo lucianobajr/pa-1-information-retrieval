@@ -2,9 +2,9 @@ import time
 from urllib.parse import urlparse
 import requests
 from requests.exceptions import RequestException
-from src.core.types import Page
-from src.infra.robots import RobotsCache
-from src.infra.logger import get_logger
+from src.domain.types.page import Page
+from src.infra.cache.robots import RobotsCache
+from src.adapters.output.logger import get_logger
 
 
 class Fetcher:
@@ -41,7 +41,7 @@ class Fetcher:
         if not domain:
             self.logger.warning(f"[Fetcher] URL inválida ignorada: {url}")
             return None
-
+        
         # politeness
         delay = self.robots_cache.get_crawl_delay(domain, self.user_agent)
         last = self.domain_last_access.get(domain, 0)

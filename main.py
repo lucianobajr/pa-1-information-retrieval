@@ -1,5 +1,5 @@
-from src.config.settings import Settings
-from src.utils.parse_args import parse_args
+from src.config.settings_cli_args import Settings
+from src.adapters.input.parse_args import parse_args
 
 from src.core.controller import Controller
 

@@ -3,15 +3,15 @@ import threading
 import json
 from bs4 import BeautifulSoup
 
-from src.config.settings import Settings
+from src.config.settings_cli_args import Settings
 from src.core.frontier import Frontier
 from src.core.fetcher import Fetcher
 from src.core.corpus import Corpus
-from src.core.extractor import extract_outlinks
-from src.infra.logger import get_logger
-from src.core.seeds_loader import get_seeds_from_file
+from src.shared.helpers.extractor import extract_outlinks
+from src.adapters.output.logger import get_logger
+from src.adapters.input.seeds_loader import get_seeds_from_file
 
-from src.utils.get_safe_thread_count import get_safe_thread_count
+from src.shared.utils.get_safe_thread_count import get_safe_thread_count
 
 
 class Controller:
@@ -99,7 +99,7 @@ class Controller:
                 if self.settings.debug:
 
                     soup = BeautifulSoup(page.html, 'html.parser')
-                    
+
                     title_tag = soup.title
                     title = title_tag.string.strip() if title_tag and title_tag.string else ""
 

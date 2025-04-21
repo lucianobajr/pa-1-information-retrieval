@@ -1,7 +1,7 @@
 import heapq
 from typing import Set, List
-from src.core.types import PrioritizedURL
-from src.core.normalizer import normalize_url
+from src.domain.types.prioritized_url import PrioritizedURL
+from src.shared.helpers.normalizer import normalize_url
 
 
 class Frontier:

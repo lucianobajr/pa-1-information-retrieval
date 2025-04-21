@@ -1,7 +1,7 @@
 
 from typing import Set
 from urllib.parse import urlparse
-from src.core.normalizer import normalize_url
+from src.shared.helpers.normalizer import normalize_url
 
 
 def verify_is_valid_url(url: str) -> bool:
