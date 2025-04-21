@@ -4,6 +4,7 @@ import os
 
 _loggers = {}
 
+
 def get_logger(name: str = "crawler", debug: bool = False) -> logging.Logger:
     if name in _loggers:
         return _loggers[name]

@@ -1,6 +1,7 @@
 import os
 import threading
 
+
 def get_safe_thread_count(default: int = 5) -> int:
     '''
     Tenta retornar um número seguro de threads com base na CPU.
@@ -13,12 +14,12 @@ def get_safe_thread_count(default: int = 5) -> int:
         # Teste rápido de viabilidade criando threads dummy
         threads = []
         for _ in range(suggested):
-            t = threading.Thread(target=lambda: None)
-            t.start()
-            threads.append(t)
+            thread = threading.Thread(target=lambda: None)
+            thread.start()
+            threads.append(thread)
 
-        for t in threads:
-            t.join()
+        for thread in threads:
+            thread.join()
 
         return suggested
     except Exception as e:

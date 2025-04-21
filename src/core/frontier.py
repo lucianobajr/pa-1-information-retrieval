@@ -23,7 +23,7 @@ class Frontier:
         Adiciona uma nova URL à fronteira, se ainda não foi visitada.
         '''
         norm_url = normalize_url(url)
-        if norm_url not in self.seen:
+        if norm_url and norm_url not in self.seen:
             heapq.heappush(self.queue, PrioritizedURL(priority, norm_url))
             self.seen.add(norm_url)
 

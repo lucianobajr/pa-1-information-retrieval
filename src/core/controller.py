@@ -82,6 +82,11 @@ class Controller:
             try:
                 page = self.fetcher.fetch(url)
 
+                if not page:
+                    self.logger.debug(
+                        f"[Controller] Nenhuma página retornada para: {url}")
+                    continue
+
                 if page.status_code != 200:
                     self.logger.warning(
                         f"[{page.status_code}] Ignorado: {url}")
@@ -94,7 +99,10 @@ class Controller:
                 if self.settings.debug:
 
                     soup = BeautifulSoup(page.html, 'html.parser')
-                    title = soup.title.string.strip() if soup.title else ""
+                    
+                    title_tag = soup.title
+                    title = title_tag.string.strip() if title_tag and title_tag.string else ""
+
                     text = ' '.join(soup.get_text().split()[:20])
                     record = {
                         "URL": page.url,

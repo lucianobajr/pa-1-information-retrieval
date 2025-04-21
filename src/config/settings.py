@@ -7,6 +7,7 @@ class Settings:
         page_limit (int): Número máximo de páginas a serem rastreadas (opção -n <LIMIT>).
         debug (bool): Indica se o modo de depuração está ativado (opcional).
     """
+
     def __init__(self, seed_file: str, page_limit: int, debug: bool = False):
         self.seed_file = seed_file
         self.page_limit = page_limit

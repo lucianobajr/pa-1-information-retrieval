@@ -1,6 +1,7 @@
-import urllib.robotparser
 from urllib.parse import urlparse
 
+from protego import Protego
+import requests
 
 class RobotsCache:
     '''
@@ -21,14 +22,15 @@ class RobotsCache:
         '''
 
         if domain not in self.cache:
-            parser = urllib.robotparser.RobotFileParser()
-            parser.set_url(f"http://{domain}/robots.txt")
             try:
-                parser.read()
+                response = requests.get(f"http://{domain}/robots.txt", timeout=5)
+                if response.status_code == 200:
+                    self.cache[domain] = Protego.parse(response.text)
+                else:
+                    self.cache[domain] = None
             except Exception as e:
-                print(f"Erro ao ler robots.txt de {domain}: {e}")
-                parser = None
-            self.cache[domain] = parser
+                print(f"Erro ao obter robots.txt de {domain}: {e}")
+                self.cache[domain] = None
         return self.cache[domain]
 
     def can_fetch(self, url: str, user_agent: str) -> bool:
