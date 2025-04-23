@@ -1,16 +1,25 @@
+import os
 import threading
-
 import json
+import socket
+import time
+
+from collections import defaultdict
+from urllib.parse import urlparse
+
 from bs4 import BeautifulSoup
 
 from src.config.settings_cli_args import Settings
+
 from src.core.frontier import Frontier
 from src.core.fetcher import Fetcher
 from src.core.corpus import Corpus
-from src.shared.helpers.extractor import extract_outlinks
+
 from src.adapters.output.logger import get_logger
+from src.adapters.output.warc_storage import WarcStorage
 from src.adapters.input.seeds_loader import get_seeds_from_file
 
+from src.shared.helpers.extractor import extract_outlinks
 from src.shared.utils.get_safe_thread_count import get_safe_thread_count
 
 
@@ -33,6 +42,15 @@ class Controller:
         self.page_count = 0
         self.lock = threading.Lock()
 
+        self.start_time = None
+        self.graph = []
+        self.nodes = {}
+        self.domain_page_count = defaultdict(int)
+        self.token_count_per_url = {}
+
+        self.warc = WarcStorage() if settings.storage_policy in {
+            "warc", "both"} else None
+
         seeds = get_seeds_from_file(settings.seed_file)
         for seed in seeds:
             self.frontier.add(seed)
@@ -45,9 +63,12 @@ class Controller:
         processar e armazenar páginas da web. Aguarda até que todas as threads finalizem.
         '''
 
-        thread_count = get_safe_thread_count(default=5)
+        self.start_time = time.time()
+        thread_count = get_safe_thread_count(default=6)
 
         threads = []
+
+        # Parallelization Policy
         for _ in range(thread_count):  # Número de threads paralelas
             thread = threading.Thread(target=self.worker)
             thread.start()
@@ -55,6 +76,8 @@ class Controller:
 
         for thread in threads:
             thread.join()
+
+        self.save_statistics(thread_count)
 
     def worker(self):
         '''
@@ -92,34 +115,107 @@ class Controller:
                         f"[{page.status_code}] Ignorado: {url}")
                     continue
 
-                if not self.corpus.save(page.url, page.html):
+                # Storage Policy
+                is_unique = False
+
+                if self.settings.storage_policy in {"corpus", "both"}:
+                    is_unique = self.corpus.save(page.url, page.html)
+
+                if self.settings.storage_policy in {"warc", "both"}:
+                    if self.settings.storage_policy == "warc":
+                        is_unique = True
+                    if is_unique and self.warc:
+                        self.warc.save(page.url, page.html)
+
+                if not is_unique:
                     self.logger.debug(f"Duplicado (hash): {url}")
                     continue
 
+                soup = BeautifulSoup(page.html, 'html.parser')
+
+                title_tag = soup.title
+                title = title_tag.string.strip() if title_tag and title_tag.string else ""
+
+                text = soup.get_text(separator=' ', strip=True)
+                tokens = text.split()
+                
+                record = {
+                    "URL": page.url,
+                    "Title": title,
+                    "Text": ' '.join(tokens[:20]),
+                    "Timestamp": int(page.timestamp)
+                }
+                parsed = urlparse(page.url)
+                domain = parsed.netloc
+                try:
+                    ip = socket.gethostbyname(domain)
+                except Exception:
+                    ip = None
+
+                self.nodes[page.url] = ip
+                self.token_count_per_url[page.url] = len(tokens)
+
                 if self.settings.debug:
 
-                    soup = BeautifulSoup(page.html, 'html.parser')
-
-                    title_tag = soup.title
-                    title = title_tag.string.strip() if title_tag and title_tag.string else ""
-
-                    text = ' '.join(soup.get_text().split()[:20])
-                    record = {
-                        "URL": page.url,
-                        "Title": title,
-                        "Text": text,
-                        "Timestamp": int(page.timestamp)
-                    }
                     print(json.dumps(record, ensure_ascii=False))
 
-                outlinks = extract_outlinks(page.html, page.url)
                 with self.lock:
+                    if self.page_count >= self.max_pages:
+                        return
+
                     self.page_count += 1
+                    self.domain_page_count[domain] += 1
+
+
+                outlinks = extract_outlinks(page.html, page.url)
 
                 self.logger.info(f"[{self.page_count}] Página coletada: {url}")
 
                 for link in outlinks:
                     self.frontier.add(link)
+                    self.graph.append({
+                        "source": page.url,
+                        "target": link
+                    })
 
             except Exception as e:
                 self.logger.error(f"Erro ao processar {url}: {e}")
+
+    def save_statistics(self, thread_count: int):
+        end_time = time.time()
+        elapsed = end_time - self.start_time if self.start_time else 1
+        stats_dir = "stats"
+
+        self.warc.close()
+
+        os.makedirs(stats_dir, exist_ok=True)
+
+        with open(f"{stats_dir}/graph.json", "w", encoding="utf-8") as file_json:
+            json.dump({
+                "nodes": [{"id": url, "ip": ip} for url, ip in self.nodes.items()],
+                "edges": self.graph
+            }, file_json, indent=2)
+
+        with open(f"{stats_dir}/download_stats.json", "w", encoding="utf-8") as file_json:
+            json.dump({
+                "total_pages": self.page_count,
+                "elapsed_time_sec": round(elapsed, 2),
+                "pages_per_second": round(self.page_count / elapsed, 2),
+                "threads": thread_count
+            }, file_json, indent=2)
+
+        with open(f"{stats_dir}/domain_distribution.json", "w", encoding="utf-8") as file_json:
+            json.dump(self.domain_page_count, file_json, indent=2)
+
+        with open(f"{stats_dir}/token_distribution.json", "w", encoding="utf-8") as file_json:
+            json.dump(self.token_count_per_url, file_json, indent=2)
+
+        print("\n📊 Estatísticas do Corpus:")
+        print(f"- Total de páginas coletadas: {self.page_count}")
+        print(f"- Total de domínios únicos: {len(self.domain_page_count)}")
+        print("- Distribuição de páginas por domínio:")
+        for domain, count in sorted(self.domain_page_count.items(), key=lambda x: x[1], reverse=True)[:10]:
+            print(f"  • {domain}: {count} páginas")
+        print("- Distribuição de tokens por página (top 10):")
+        for url, count in sorted(self.token_count_per_url.items(), key=lambda x: x[1], reverse=True)[:10]:
+            print(f"  • {url}: {count} tokens")

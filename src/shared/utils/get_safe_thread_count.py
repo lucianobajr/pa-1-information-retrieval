@@ -2,7 +2,7 @@ import os
 import threading
 
 
-def get_safe_thread_count(default: int = 5) -> int:
+def get_safe_thread_count(default: int = 6) -> int:
     '''
     Tenta retornar um número seguro de threads com base na CPU.
     Se falhar ao criar threads, retorna um valor padrão seguro.

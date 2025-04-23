@@ -1,5 +1,6 @@
 import heapq
 from typing import Set, List
+
 from src.domain.types.prioritized_url import PrioritizedURL
 from src.shared.helpers.normalizer import normalize_url
 
@@ -23,6 +24,8 @@ class Frontier:
         Adiciona uma nova URL à fronteira, se ainda não foi visitada.
         '''
         norm_url = normalize_url(url)
+        
+        # Revisitation Policy
         if norm_url and norm_url not in self.seen:
             heapq.heappush(self.queue, PrioritizedURL(priority, norm_url))
             self.seen.add(norm_url)

@@ -8,7 +8,8 @@ class Settings:
         debug (bool): Indica se o modo de depuração está ativado (opcional).
     """
 
-    def __init__(self, seed_file: str, page_limit: int, debug: bool = False):
+    def __init__(self, seed_file: str, page_limit: int, debug: bool = False, storage_policy: str = "warc"):
         self.seed_file = seed_file
         self.page_limit = page_limit
         self.debug = debug
+        self.storage_policy = storage_policy  # "corpus", "warc" ou "both"

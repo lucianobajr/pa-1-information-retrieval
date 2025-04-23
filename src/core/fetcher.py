@@ -1,7 +1,9 @@
 import time
 from urllib.parse import urlparse
+
 import requests
 from requests.exceptions import RequestException
+
 from src.domain.types.page import Page
 from src.infra.cache.robots import RobotsCache
 from src.adapters.output.logger import get_logger
@@ -41,8 +43,8 @@ class Fetcher:
         if not domain:
             self.logger.warning(f"[Fetcher] URL inválida ignorada: {url}")
             return None
-        
-        # politeness
+
+        # Politeness Policy
         delay = self.robots_cache.get_crawl_delay(domain, self.user_agent)
         last = self.domain_last_access.get(domain, 0)
         now = time.time()
@@ -57,6 +59,8 @@ class Fetcher:
             self.domain_last_access[domain] = time.time()
 
             content_type = response.headers.get("Content-Type", "")
+            
+            # Selection Policy
             if "text/html" not in content_type:
                 self.logger.debug(
                     f"[Fetcher] Ignorado (não HTML): {url} -> {content_type}")
