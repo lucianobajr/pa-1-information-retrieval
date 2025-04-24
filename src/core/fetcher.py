@@ -58,7 +58,7 @@ class Fetcher:
 
             self.domain_last_access[domain] = time.time()
 
-            content_type = response.headers.get("Content-Type", "")
+            content_type = response.headers.get("Content-Type", "").lower()
             
             # Selection Policy
             if "text/html" not in content_type:

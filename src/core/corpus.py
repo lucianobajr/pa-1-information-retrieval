@@ -10,7 +10,7 @@ class Corpus:
     Também mantém um conjunto de hashes para evitar salvar duplicatas durante a execução.
     '''
 
-    def __init__(self, directory="corpus"):
+    def __init__(self, directory="corpus/html"):
         '''
         Inicializa o diretório onde as páginas serão salvas e um conjunto de hashes.
         '''

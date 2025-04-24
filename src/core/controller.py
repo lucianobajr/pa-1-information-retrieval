@@ -4,6 +4,8 @@ import json
 import socket
 import time
 
+from multiprocessing import Queue
+
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -16,7 +18,7 @@ from src.core.fetcher import Fetcher
 from src.core.corpus import Corpus
 
 from src.adapters.output.logger import get_logger
-from src.adapters.output.warc_storage import WarcStorage
+from src.adapters.output.warc_writer_process import start_warc_writer
 from src.adapters.input.seeds_loader import get_seeds_from_file
 
 from src.shared.helpers.extractor import extract_outlinks
@@ -48,8 +50,8 @@ class Controller:
         self.domain_page_count = defaultdict(int)
         self.token_count_per_url = {}
 
-        self.warc = WarcStorage() if settings.storage_policy in {
-            "warc", "both"} else None
+        self.warc_queue = Queue()
+        self.warc_process = start_warc_writer(self.warc_queue)
 
         seeds = get_seeds_from_file(settings.seed_file)
         for seed in seeds:
@@ -76,6 +78,10 @@ class Controller:
 
         for thread in threads:
             thread.join()
+
+        if self.warc_process:
+            self.warc_queue.put("__STOP__")
+            self.warc_process.join()
 
         self.save_statistics(thread_count)
 
@@ -116,20 +122,8 @@ class Controller:
                     continue
 
                 # Storage Policy
-                is_unique = False
-
-                if self.settings.storage_policy in {"corpus", "both"}:
-                    is_unique = self.corpus.save(page.url, page.html)
-
-                if self.settings.storage_policy in {"warc", "both"}:
-                    if self.settings.storage_policy == "warc":
-                        is_unique = True
-                    if is_unique and self.warc:
-                        self.warc.save(page.url, page.html)
-
-                if not is_unique:
-                    self.logger.debug(f"Duplicado (hash): {url}")
-                    continue
+                self.storage_policy(
+                    url=url, page_url=page.url, page_html=page.html)
 
                 soup = BeautifulSoup(page.html, 'html.parser')
 
@@ -138,7 +132,7 @@ class Controller:
 
                 text = soup.get_text(separator=' ', strip=True)
                 tokens = text.split()
-                
+
                 record = {
                     "URL": page.url,
                     "Title": title,
@@ -147,6 +141,7 @@ class Controller:
                 }
                 parsed = urlparse(page.url)
                 domain = parsed.netloc
+
                 try:
                     ip = socket.gethostbyname(domain)
                 except Exception:
@@ -166,7 +161,6 @@ class Controller:
                     self.page_count += 1
                     self.domain_page_count[domain] += 1
 
-
                 outlinks = extract_outlinks(page.html, page.url)
 
                 self.logger.info(f"[{self.page_count}] Página coletada: {url}")
@@ -181,12 +175,19 @@ class Controller:
             except Exception as e:
                 self.logger.error(f"Erro ao processar {url}: {e}")
 
+    def storage_policy(self, url: str, page_url: str, page_html: str):
+
+        if self.settings.storage_policy == "warc":
+            self.warc_queue.put((page_url, page_html))
+
+        if self.settings.storage_policy == "html_pages":
+            if not self.corpus.save(page_url, page_html):
+                self.logger.debug(f"Duplicado (hash): {url}")
+
     def save_statistics(self, thread_count: int):
         end_time = time.time()
         elapsed = end_time - self.start_time if self.start_time else 1
         stats_dir = "stats"
-
-        self.warc.close()
 
         os.makedirs(stats_dir, exist_ok=True)
 

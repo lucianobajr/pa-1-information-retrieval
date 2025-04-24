@@ -9,7 +9,10 @@ class Settings:
     """
 
     def __init__(self, seed_file: str, page_limit: int, debug: bool = False, storage_policy: str = "warc"):
+        if storage_policy not in ("html_pages", "warc"):
+            raise ValueError(f"storage_policy inválido: {storage_policy}. Use 'html_pages' ou 'warc'.")
+        
         self.seed_file = seed_file
         self.page_limit = page_limit
         self.debug = debug
-        self.storage_policy = storage_policy  # "corpus", "warc" ou "both"
+        self.storage_policy = storage_policy  # "corpus" ou "warc" 
