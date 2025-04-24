@@ -18,7 +18,7 @@ from src.core.fetcher import Fetcher
 from src.core.corpus import Corpus
 
 from src.adapters.output.logger import get_logger
-from src.adapters.output.warc_writer_process import start_warc_writer
+from src.adapters.output.warc.warc_writer_process import start_warc_writer
 from src.adapters.input.seeds_loader import get_seeds_from_file
 
 from src.shared.helpers.extractor import extract_outlinks
