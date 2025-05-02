@@ -23,12 +23,13 @@ class Frontier:
         '''
         Adiciona uma nova URL à fronteira, se ainda não foi visitada.
         '''
-        norm_url = normalize_url(url)
-        
+        normalized_url = normalize_url(url=url)
+
         # Revisitation Policy
-        if norm_url and norm_url not in self.seen:
-            heapq.heappush(self.queue, PrioritizedURL(priority, norm_url))
-            self.seen.add(norm_url)
+        if normalized_url and normalized_url not in self.seen:
+            heapq.heappush(self.queue, PrioritizedURL(
+                priority=priority, url=normalized_url))
+            self.seen.add(normalized_url)
 
     def pop(self) -> str:
         '''

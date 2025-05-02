@@ -51,11 +51,13 @@ class Controller:
         self.token_count_per_url = {}
 
         self.warc_queue = Queue()
+
+        # inicializa o processo para gravar os arquivos
         self.warc_process = start_warc_writer(self.warc_queue)
 
-        seeds = get_seeds_from_file(settings.seed_file)
+        seeds = get_seeds_from_file(seed_file=settings.seed_file)
         for seed in seeds:
-            self.frontier.add(seed)
+            self.frontier.add(url=seed)
 
     def run(self):
         '''
@@ -83,7 +85,7 @@ class Controller:
             self.warc_queue.put("__STOP__")
             self.warc_process.join()
 
-        self.save_statistics(thread_count)
+        self.save_statistics(thread_count=thread_count)
 
     def worker(self):
         '''
@@ -104,41 +106,48 @@ class Controller:
                 if self.page_count >= self.max_pages:
                     return
 
+            # recupera/remove a próxima URL da frontier
             url = self.frontier.pop()
             if not url:
                 return
 
             try:
-                page = self.fetcher.fetch(url)
+                # requisição da url e recuperação do conteúdo da página
+                page = self.fetcher.fetch(url=url)
 
                 if not page:
                     self.logger.debug(
                         f"[Controller] Nenhuma página retornada para: {url}")
                     continue
 
+                # ignorando páginas que nao tem resposta HTTP como 200 (OK)
                 if page.status_code != 200:
                     self.logger.warning(
                         f"[{page.status_code}] Ignorado: {url}")
                     continue
 
-                # Storage Policy
+                # Storage Policy => armazeando a página
                 self.storage_policy(
                     url=url, page_url=page.url, page_html=page.html)
 
+                # Faz parsing do HTML para extrair informações
                 soup = BeautifulSoup(page.html, 'html.parser')
 
                 title_tag = soup.title
                 title = title_tag.string.strip() if title_tag and title_tag.string else ""
 
+                # Extrai o texto visível da página e separa em tokens
                 text = soup.get_text(separator=' ', strip=True)
                 tokens = text.split()
 
+                # usado no modo debug
                 record = {
                     "URL": page.url,
                     "Title": title,
                     "Text": ' '.join(tokens[:20]),
                     "Timestamp": int(page.timestamp)
                 }
+
                 parsed = urlparse(page.url)
                 domain = parsed.netloc
 
@@ -154,6 +163,7 @@ class Controller:
 
                     print(json.dumps(record, ensure_ascii=False))
 
+                # Atualiza contadores
                 with self.lock:
                     if self.page_count >= self.max_pages:
                         return
@@ -161,12 +171,14 @@ class Controller:
                     self.page_count += 1
                     self.domain_page_count[domain] += 1
 
-                outlinks = extract_outlinks(page.html, page.url)
+                # Extrai todos os outlinks
+                outlinks = extract_outlinks(html=page.html, base_url=page.url)
 
                 self.logger.info(f"[{self.page_count}] Página coletada: {url}")
 
+                # Adiciona os novos links na frontier para futuras coletas
                 for link in outlinks:
-                    self.frontier.add(link)
+                    self.frontier.add(url=link)
                     self.graph.append({
                         "source": page.url,
                         "target": link
@@ -181,7 +193,7 @@ class Controller:
             self.warc_queue.put((page_url, page_html))
 
         if self.settings.storage_policy == "html_pages":
-            if not self.corpus.save(page_url, page_html):
+            if not self.corpus.save(url=page_url, html=page_html):
                 self.logger.debug(f"Duplicado (hash): {url}")
 
     def save_statistics(self, thread_count: int):

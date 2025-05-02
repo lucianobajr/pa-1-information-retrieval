@@ -10,7 +10,7 @@ def verify_is_valid_url(url: str) -> bool:
     '''
     if not url:
         return False
-    
+
     try:
         parsed = urlparse(url.strip())
         return all([parsed.scheme in {"http", "https"}, parsed.netloc])
@@ -34,8 +34,8 @@ def get_seeds_from_file(seed_file: str) -> Set[str]:
                 if not seed or seed.startswith("#"):
                     continue
 
-                if verify_is_valid_url(seed):
-                    normalized = normalize_url(seed)
+                if verify_is_valid_url(url=seed):
+                    normalized = normalize_url(url=seed)
                     seeds.add(normalized)
                 else:
                     print(f"[WARN] URL inválida ignorada: {seed}")
